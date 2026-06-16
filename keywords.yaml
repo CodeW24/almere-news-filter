@@ -1,0 +1,71 @@
+# Pre-filter keywords. Case-insensitive substring match op title + summary.
+# Eén match = artikel gaat door naar LLM-scoring.
+# Brede lijst = meer LLM-calls per run; smalle lijst = strakker filter.
+# Tuning advies: kijk wekelijks naar de "filtered_out" met hoge bron-tier
+# en aan de andere kant naar laag-scorende artikelen die wel doorkwamen.
+
+almere_direct:
+  - Almere
+  - Almeerder
+  - Almeerse
+  - Floriade
+  - Oosterwold
+  - Almere City
+
+regio:
+  - Flevoland
+  - Lelystad
+  - Markermeer
+  - IJmeer
+  - IJsselmeer
+  - Pampus
+
+infrastructuur:
+  - Schiphol
+  - Lelystad Airport
+  - Hanzelijn
+  - Flevolijn
+  - IJmeerverbinding
+
+nationaal_politiek:
+  - Tweede Kamer
+  - Eerste Kamer
+  - kabinet
+  - rijksoverheid
+  - prinsjesdag
+  - regeerakkoord
+  - hoofdlijnenakkoord
+  - rijksbegroting
+  - VVD
+  - GroenLinks-PvdA
+  - PVV
+  - D66
+  - NSC
+  - BBB
+  - CDA
+
+beleid_en_themas:
+  - woningmarkt
+  - woningbouw
+  - huurprijs
+  - sociale huur
+  - hypotheekrente
+  - stikstof
+  - klimaatadaptatie
+  - waterveiligheid
+  - hoogwater
+  - energieprijs
+  - energietransitie
+  - openbaar vervoer
+  - NS-treinen
+  - asielbeleid
+  - integratie
+  - jeugdzorg
+
+internationaal_met_NL_impact:
+  - Europese Commissie
+  - EU-besluit
+  - NAVO
+  - Oekraïne
+  - Gaza
+  - klimaattop

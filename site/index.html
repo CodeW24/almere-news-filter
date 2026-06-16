@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Almere News Filter</title>
+<style>
+  :root {
+    --text:        #0b1220;
+    --text-soft:   #2a3142;
+    --text-muted:  #5a6478;
+    --text-faint:  #7a8499;
+    --accent:      #0369a1;
+    --accent-hi:   #0ea5e9;
+
+    --glass-bg:        rgba(255, 255, 255, 0.42);
+    --glass-bg-strong: rgba(255, 255, 255, 0.62);
+    --glass-border:    rgba(255, 255, 255, 0.75);
+    --glass-inner:     rgba(255, 255, 255, 0.95);
+    --glass-shadow:    0 10px 40px -8px rgba(31, 60, 121, 0.22),
+                       0 2px 8px -2px rgba(31, 60, 121, 0.12);
+    --glass-shadow-hi: 0 18px 56px -10px rgba(31, 60, 121, 0.30),
+                       0 4px 12px -2px rgba(31, 60, 121, 0.15);
+
+    --score-high-grad: linear-gradient(135deg, #34d399 0%, #10b981 55%, #059669 100%);
+    --score-mid-grad:  linear-gradient(135deg, #60a5fa 0%, #3b82f6 55%, #2563eb 100%);
+    --score-low-grad:  linear-gradient(135deg, #cbd5e1 0%, #94a3b8 55%, #64748b 100%);
+
+    --badge-bg:     rgba(255, 255, 255, 0.55);
+    --badge-border: rgba(255, 255, 255, 0.85);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --text:       #f1f5fb;
+      --text-soft:  #d6dde9;
+      --text-muted: #a4adc1;
+      --text-faint: #7a849c;
+      --accent:     #7dd3fc;
+      --accent-hi:  #bae6fd;
+
+      --glass-bg:        rgba(18, 22, 38, 0.42);
+      --glass-bg-strong: rgba(18, 22, 38, 0.62);
+      --glass-border:    rgba(255, 255, 255, 0.14);
+      --glass-inner:     rgba(255, 255, 255, 0.16);
+      --glass-shadow:    0 10px 40px -8px rgba(0, 0, 0, 0.55),
+                         0 2px 8px -2px rgba(0, 0, 0, 0.35);
+      --glass-shadow-hi: 0 18px 56px -10px rgba(0, 0, 0, 0.65),
+                         0 4px 12px -2px rgba(0, 0, 0, 0.4);
+
+      --badge-bg:     rgba(255, 255, 255, 0.08);
+      --badge-border: rgba(255, 255, 255, 0.18);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", system-ui, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    background-color: #cfe8ff;
+    background-image:
+      radial-gradient(900px 600px at 12% 8%,  rgba(255, 192, 203, 0.55) 0%, transparent 60%),
+      radial-gradient(800px 600px at 88% 12%, rgba(167, 224, 255, 0.85) 0%, transparent 60%),
+      radial-gradient(900px 700px at 80% 95%, rgba(186, 196, 255, 0.75) 0%, transparent 60%),
+      radial-gradient(700px 600px at 18% 92%, rgba(255, 222, 173, 0.55) 0%, transparent 60%),
+      linear-gradient(180deg, #d8ecff 0%, #e2d6ff 55%, #fde2e4 100%);
+    background-attachment: fixed;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      background-color: #0b1023;
+      background-image:
+        radial-gradient(900px 600px at 12% 8%,  rgba(56, 24, 90, 0.85)  0%, transparent 60%),
+        radial-gradient(800px 600px at 88% 12%, rgba(14, 60, 110, 0.95) 0%, transparent 60%),
+        radial-gradient(900px 700px at 80% 95%, rgba(36, 14, 92, 0.85)  0%, transparent 60%),
+        radial-gradient(700px 600px at 18% 92%, rgba(76, 27, 80, 0.7)   0%, transparent 60%),
+        linear-gradient(180deg, #060919 0%, #0c1230 55%, #1a0c2c 100%);
+    }
+  }
+
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 2.5rem 1rem 5rem;
+  }
+
+  /* Glass-card base — reused by header and articles */
+  .glass {
+    position: relative;
+    background: var(--glass-bg);
+    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: var(--glass-shadow);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  /* Top gloss — the Aero highlight */
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 100%);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.65;
+  }
+  @media (prefers-color-scheme: dark) {
+    .glass::before {
+      background: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 100%);
+      opacity: 0.7;
+    }
+  }
+  /* Inner light edge */
+  .glass::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: inset 0 1px 0 0 var(--glass-inner);
+    z-index: 0;
+  }
+
+  header.hero {
+    padding: 1.75rem 1.6rem 1.6rem;
+    margin-bottom: 1.5rem;
+  }
+  header.hero > * { position: relative; z-index: 1; }
+  header.hero h1 {
+    margin: 0 0 0.5rem;
+    font-size: 1.85rem;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 50%, #a855f7 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+  }
+  header.hero p.intro {
+    margin: 0 0 0.85rem;
+    color: var(--text-soft);
+    font-size: 0.98rem;
+  }
+  header.hero p.updated {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    background: var(--badge-bg);
+    border: 1px solid var(--badge-border);
+    backdrop-filter: blur(8px);
+  }
+  header.hero p.updated::before {
+    content: "";
+    width: 0.45rem; height: 0.45rem;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.7);
+  }
+
+  ol.articles {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  li.article {
+    padding: 1.05rem 1.15rem 1.1rem;
+    transition: transform 220ms cubic-bezier(.2,.7,.2,1),
+                box-shadow 220ms cubic-bezier(.2,.7,.2,1);
+  }
+  li.article > * { position: relative; z-index: 1; }
+  li.article:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glass-shadow-hi);
+  }
+
+  .article-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.55rem;
+  }
+  .rank {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+
+  .score-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.1rem;
+    padding: 0.22rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    border: 1px solid rgba(255,255,255,0.55);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.55),
+      inset 0 -6px 12px -6px rgba(0,0,0,0.18),
+      0 4px 10px -2px rgba(0,0,0,0.18);
+    text-shadow: 0 1px 1px rgba(0,0,0,0.18);
+  }
+  .score-chip .of { opacity: 0.75; font-weight: 500; font-size: 0.72rem; margin-left: 0.1rem; }
+  .score-high { background: var(--score-high-grad); }
+  .score-mid  { background: var(--score-mid-grad); }
+  .score-low  { background: var(--score-low-grad); }
+
+  .article-body {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 0.85rem;
+    align-items: start;
+  }
+  .logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--glass-bg-strong);
+    border: 1px solid var(--glass-border);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.6),
+      0 2px 6px -2px rgba(31, 60, 121, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .logo img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.12));
+  }
+  .logo-fallback {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #94a3b8, #475569);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .article-text { min-width: 0; }
+  .article-title {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.04rem;
+    line-height: 1.35;
+    letter-spacing: -0.005em;
+    display: inline-block;
+  }
+  .article-title:hover {
+    background: linear-gradient(135deg, var(--accent-hi), var(--accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .meta {
+    margin-top: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.55rem;
+    align-items: center;
+  }
+  .badge {
+    background: var(--badge-bg);
+    border: 1px solid var(--badge-border);
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    backdrop-filter: blur(6px);
+    color: var(--text-soft);
+  }
+  .meta .dot { color: var(--text-faint); }
+
+  .motivation {
+    margin: 0.55rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  footer {
+    margin-top: 2rem;
+    padding: 1.25rem 1.35rem 1.35rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  footer > * { position: relative; z-index: 1; }
+  footer p { margin: 0 0 0.6rem; }
+  footer a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px dashed currentColor;
+  }
+  footer a:hover { color: var(--accent-hi); border-bottom-style: solid; }
+
+  @media (max-width: 520px) {
+    main { padding: 1.5rem 0.75rem 4rem; }
+    header.hero { padding: 1.4rem 1.2rem 1.3rem; }
+    header.hero h1 { font-size: 1.55rem; }
+    li.article { padding: 0.95rem 1rem 1rem; }
+    .article-body { grid-template-columns: 38px 1fr; gap: 0.7rem; }
+    .logo { width: 38px; height: 38px; }
+    .logo img { width: 24px; height: 24px; }
+    .article-title { font-size: 1rem; }
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    li.article { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header class="glass hero">
+    <h1>Almere News Filter</h1>
+    <p class="intro">De 20 meest relevante nieuwsberichten voor Almere, elke 12 uur opnieuw geselecteerd door AI uit wereldwijde bronnen.</p>
+    <p class="updated">Laatst bijgewerkt: 16 jun 2026, 21:56 (Europe/Amsterdam)</p>
+  </header>
+
+  <ol class="articles">
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#01</span>
+        <span class="score-chip score-high">10<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=omroepflevoland.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'O'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.omroepflevoland.nl/nieuws/512605/almeerder-die-schutter-naar-groningen-bracht-veroordeeld-maar-hoeft-niet-terug-de-cel-in" target="_blank" rel="noopener noreferrer">Almere - Almeerder die schutter naar Groningen bracht veroordeeld, maar hoeft niet terug de cel in</a>
+          <div class="meta">
+            <span class="badge">Omroep Flevoland</span>
+            <span class="badge">nl_regionaal</span>
+            <span class="dot">·</span>
+            <span>46 minuten geleden</span>
+          </div>
+          <p class="motivation">Dit artikel gaat specifiek over een Almeerder die veroordeeld is voor betrokkenheid bij beschietingen, wat direct relevant is voor de stad.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#02</span>
+        <span class="score-chip score-high">10<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=omroepflevoland.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'O'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.omroepflevoland.nl/nieuws/512585/nieuwsoverzicht-1606-or-oplossing-voor-taxi-oorlog-almere-*-explosie-bij-appartementen-lars-lelystad" target="_blank" rel="noopener noreferrer">Flevoland - Nieuwsoverzicht 16/06 | Oplossing voor taxi-oorlog Almere • Explosie bij appartementen Lars Lelystad</a>
+          <div class="meta">
+            <span class="badge">Omroep Flevoland</span>
+            <span class="badge">nl_regionaal</span>
+            <span class="dot">·</span>
+            <span>3 uur geleden</span>
+          </div>
+          <p class="motivation">De samenvatting bevat meerdere directe en belangrijke nieuwsitems die specifiek over Almere gaan, zoals de taxi-oorlog, een woningoverval en problemen met het OV.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#03</span>
+        <span class="score-chip score-high">10<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=omroepflevoland.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'O'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.omroepflevoland.nl/nieuws/512590/celstraf-geeist-tegen-almeerder-(44)-die-vuurwapen-aan-stiefzoon-gaf" target="_blank" rel="noopener noreferrer">Almere - Celstraf geëist tegen Almeerder (44) die vuurwapen aan stiefzoon gaf</a>
+          <div class="meta">
+            <span class="badge">Omroep Flevoland</span>
+            <span class="badge">nl_regionaal</span>
+            <span class="dot">·</span>
+            <span>4 uur geleden</span>
+          </div>
+          <p class="motivation">Dit artikel gaat direct over een strafzaak in Almere met een vuurwapenincident.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#04</span>
+        <span class="score-chip score-high">10<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=omroepflevoland.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'O'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.omroepflevoland.nl/nieuws/512588/keolis-krijgt-forse-boete:-te-veel-rituitval-bij-allgo-in-almere" target="_blank" rel="noopener noreferrer">Almere - Keolis krijgt forse boete: te veel rituitval bij AllGo in Almere</a>
+          <div class="meta">
+            <span class="badge">Omroep Flevoland</span>
+            <span class="badge">nl_regionaal</span>
+            <span class="dot">·</span>
+            <span>5 uur geleden</span>
+          </div>
+          <p class="motivation">Het artikel gaat direct over de betrouwbaarheid van het openbaar vervoer in Almere en de boete die de gemeente heeft opgelegd aan de busmaatschappij.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#05</span>
+        <span class="score-chip score-high">10<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=omroepflevoland.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'O'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.omroepflevoland.nl/nieuws/512568/explosie-bij-appartementencomplex-lars-lelystad-deur-en-gevel-raken-beschadigd" target="_blank" rel="noopener noreferrer">Lelystad - Explosie bij appartementencomplex Lars Lelystad, deur en gevel raken beschadigd</a>
+          <div class="meta">
+            <span class="badge">Omroep Flevoland</span>
+            <span class="badge">nl_regionaal</span>
+            <span class="dot">·</span>
+            <span>11 uur geleden</span>
+          </div>
+          <p class="motivation">Dit artikel gaat direct over een explosie in Lelystad, wat relevant is voor de veiligheid in de regio.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#06</span>
+        <span class="score-chip score-mid">8<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=nos.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'N'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://nos.nl/l/2618892" target="_blank" rel="noopener noreferrer">Trump spreekt Zelensky en hint op hervatting sancties tegen Russische olie</a>
+          <div class="meta">
+            <span class="badge">NOS</span>
+            <span class="badge">nl_landelijk</span>
+            <span class="dot">·</span>
+            <span>2 uur geleden</span>
+          </div>
+          <p class="motivation">Dit artikel over Trump, Zelensky en mogelijke sancties tegen Russische olie heeft sterke directe gevolgen voor de energieprijzen en internationale betrekkingen die Almeerders raken.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#07</span>
+        <span class="score-chip score-mid">8<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=nrc.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'N'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.nrc.nl/nieuws/2026/06/16/nos-kabinet-komt-met-ingrijpende-stikstofmaatregelen-zones-met-minder-uitstoot-en-normen-voor-aantal-dieren-a4930290" target="_blank" rel="noopener noreferrer">NOS: ‘Kabinet komt met ingrijpende stikstofmaatregelen, zones met minder uitstoot en normen voor aantal dieren’</a>
+          <div class="meta">
+            <span class="badge">NRC</span>
+            <span class="badge">nl_landelijk</span>
+            <span class="dot">·</span>
+            <span>2 uur geleden</span>
+          </div>
+          <p class="motivation">Dit artikel over stikstofmaatregelen raakt aan landelijk beleid met sterke directe gevolgen voor de woningmarkt en leefomgeving in Almere.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#08</span>
+        <span class="score-chip score-mid">8<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=rtvutrecht.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'R'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.rtvutrecht.nl/nieuws/4056498/asielrellen-leggen-grote-druk-op-wijk-bij-duurstede-kabinet-schiet-te-hulp" target="_blank" rel="noopener noreferrer">Asielrellen leggen grote druk op Wijk bij Duurstede, kabinet schiet te hulp</a>
+          <div class="meta">
+            <span class="badge">RTV Utrecht</span>
+            <span class="badge">nl_regionaal</span>
+            <span class="dot">·</span>
+            <span>2 uur geleden</span>
+          </div>
+          <p class="motivation">Dit artikel over asielrellen en de druk op gemeenten raakt aan landelijk beleid met sterke directe gevolgen voor de leefbaarheid en veiligheid die Almeerders kunnen aangaan.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#09</span>
+        <span class="score-chip score-mid">8<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=trouw.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'T'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.trouw.nl/binnenland/deel-toeslagenouders-kreeg-mogelijk-onterecht-compensatie-maar-het-kabinet-neemt-dat-voor-lief~b668c9587/" target="_blank" rel="noopener noreferrer">Deel toeslagenouders kreeg mogelijk onterecht compensatie, maar het kabinet neemt dat voor lief</a>
+          <div class="meta">
+            <span class="badge">Trouw</span>
+            <span class="badge">nl_landelijk</span>
+            <span class="dot">·</span>
+            <span>3 uur geleden</span>
+          </div>
+          <p class="motivation">Het artikel gaat over landelijk beleid rond compensatie voor de toeslagenaffaire, wat sterke directe financiële en sociale gevolgen heeft voor Almeerders.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#10</span>
+        <span class="score-chip score-mid">8<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=ad.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'A'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.ad.nl/politiek/stikstofplannen-uitgelekt-minder-koeien-en-strengere-maatregelen-rond-natuurgebieden~a95b2621/" target="_blank" rel="noopener noreferrer">Stikstofplannen uitgelekt: minder koeien en strengere maatregelen rond natuurgebieden</a>
+          <div class="meta">
+            <span class="badge">AD</span>
+            <span class="badge">nl_landelijk</span>
+            <span class="dot">·</span>
+            <span>3 uur geleden</span>
+          </div>
+          <p class="motivation">De stikstofplannen zijn landelijk beleid met sterke indirecte gevolgen voor de woningbouw en ontwikkeling in Almere.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#11</span>
+        <span class="score-chip score-mid">8<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=nos.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'N'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://nos.nl/l/2618868" target="_blank" rel="noopener noreferrer">Kabinet komt met ingrijpende stikstofplannen, onder meer zones rond natuurgebieden</a>
+          <div class="meta">
+            <span class="badge">NOS</span>
+            <span class="badge">nl_landelijk</span>
+            <span class="dot">·</span>
+            <span>4 uur geleden</span>
+          </div>
+          <p class="motivation">Dit landelijke nieuws over stikstofplannen heeft directe gevolgen voor de woningbouw en landbouw in Almere.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#12</span>
+        <span class="score-chip score-mid">8<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=trouw.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'T'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.trouw.nl/politiek/senaat-wil-box-3-wet-al-voor-de-zomer-behandelen-met-steun-van-cda~b1dcbe89/" target="_blank" rel="noopener noreferrer">Senaat wil box 3-wet al voor de zomer behandelen, met steun van CDA</a>
+          <div class="meta">
+            <span class="badge">Trouw</span>
+            <span class="badge">nl_landelijk</span>
+            <span class="dot">·</span>
+            <span>5 uur geleden</span>
+          </div>
+          <p class="motivation">De box 3-wetgeving heeft directe financiële gevolgen voor veel inwoners van Almere.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#13</span>
+        <span class="score-chip score-mid">8<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=nos.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'N'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://nos.nl/l/2618836" target="_blank" rel="noopener noreferrer">Terugdringen vuile lucht op koers: Nederlanders leven 4 maanden langer in 2030</a>
+          <div class="meta">
+            <span class="badge">NOS</span>
+            <span class="badge">nl_landelijk</span>
+            <span class="dot">·</span>
+            <span>8 uur geleden</span>
+          </div>
+          <p class="motivation">Dit landelijke nieuws over luchtkwaliteit en levensverwachting heeft directe gevolgen voor de gezondheid van Almeerders.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#14</span>
+        <span class="score-chip score-mid">8<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=parool.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'H'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.parool.nl/nederland/hittestress-kost-nu-al-250-levens-per-jaar-in-2050-mogelijk-3800-brede-coalitie-eist-wettelijke-groennorm-van-kabinet~b83c9228/" target="_blank" rel="noopener noreferrer">Hittestress kost nu al 250 levens per jaar, in 2050 mogelijk 3800: brede coalitie eist wettelijke groennorm van kabinet</a>
+          <div class="meta">
+            <span class="badge">Het Parool</span>
+            <span class="badge">nl_landelijk</span>
+            <span class="dot">·</span>
+            <span>14 uur geleden</span>
+          </div>
+          <p class="motivation">Dit artikel over hittestress en de gevolgen daarvan is zeer relevant voor Almere, gezien de klimaatadaptatie-uitdagingen en de verwachte bevolkingsgroei.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#15</span>
+        <span class="score-chip score-mid">8<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=nrc.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'N'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.nrc.nl/nieuws/2026/06/15/gommers-code-zwart-was-heel-dichtbij-en-toch-is-een-minimum-van-1-150-ic-bedden-onmogelijke-taak-a4930137" target="_blank" rel="noopener noreferrer">Gommers zegt dat Code Zwart heel dichtbij was. Maar ook dat een minimum van 1.150 IC-bedden een onmogelijke taak is</a>
+          <div class="meta">
+            <span class="badge">NRC</span>
+            <span class="badge">nl_landelijk</span>
+            <span class="dot">·</span>
+            <span>gisteren</span>
+          </div>
+          <p class="motivation">Dit artikel over IC-bedden raakt de landelijke gezondheidszorg en heeft directe gevolgen voor alle inwoners van Nederland, inclusief Almere.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#16</span>
+        <span class="score-chip score-mid">7<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=nos.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'N'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://nos.nl/l/2618901" target="_blank" rel="noopener noreferrer">Omgaan met nieuws op sociale media: &#39;Haal niet alles uit één bron&#39;</a>
+          <div class="meta">
+            <span class="badge">NOS</span>
+            <span class="badge">nl_landelijk</span>
+            <span class="dot">·</span>
+            <span>26 minuten geleden</span>
+          </div>
+          <p class="motivation">Dit artikel gaat over nieuwsconsumptie en de betrouwbaarheid van informatiebronnen, wat een algemeen maatschappelijk relevant thema is.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#17</span>
+        <span class="score-chip score-mid">7<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=volkskrant.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'D'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.volkskrant.nl/politiek/minister-sjoerdsma-ziet-meerderheid-in-eerste-kamer-gloren-voor-begroting-ontwikkelingssamenwerking~bb0e1245/" target="_blank" rel="noopener noreferrer">Minister Sjoerdsma ziet meerderheid in Eerste Kamer gloren voor begroting ontwikkelingssamenwerking</a>
+          <div class="meta">
+            <span class="badge">De Volkskrant</span>
+            <span class="badge">nl_landelijk</span>
+            <span class="dot">·</span>
+            <span>1 uur geleden</span>
+          </div>
+          <p class="motivation">Dit artikel over de begroting voor ontwikkelingssamenwerking raakt aan nationaal beleid van brede betekenis.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#18</span>
+        <span class="score-chip score-mid">7<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=nu.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'N'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.nu.nl/spanningen-oekraine/6399579/oekrainers-beseffen-steeds-meer-dat-oorlog-wellicht-nooit-meer-voorbijgaat.html" target="_blank" rel="noopener noreferrer">Oekraïners beseffen steeds meer dat oorlog wellicht nooit meer voorbijgaat</a>
+          <div class="meta">
+            <span class="badge">NU.nl</span>
+            <span class="badge">nl_landelijk</span>
+            <span class="dot">·</span>
+            <span>1 uur geleden</span>
+          </div>
+          <p class="motivation">Dit artikel over de oorlog in Oekraïne is belangrijk wereldnieuws met brede maatschappelijke implicaties.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#19</span>
+        <span class="score-chip score-mid">7<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=nrc.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'N'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.nrc.nl/nieuws/2026/06/16/als-sjoerdsma-niet-flink-extra-geld-uittrekt-voor-ontwikkelingssamenwerking-is-de-minister-spoedig-weer-terug-bij-af-a4930272" target="_blank" rel="noopener noreferrer">Als Sjoerdsma niet flink extra geld uittrekt voor ontwikkelingssamenwerking, is de minister spoedig weer terug bij af</a>
+          <div class="meta">
+            <span class="badge">NRC</span>
+            <span class="badge">nl_landelijk</span>
+            <span class="dot">·</span>
+            <span>3 uur geleden</span>
+          </div>
+          <p class="motivation">Dit artikel gaat over nationaal beleid en begrotingsonderhandelingen, wat indirect invloed kan hebben op de voorzieningen en prioriteiten in Almere.</p>
+        </div>
+      </div>
+    </li>
+    <li class="glass article">
+      <div class="article-head">
+        <span class="rank">#20</span>
+        <span class="score-chip score-mid">7<span class="of">/10</span></span>
+      </div>
+      <div class="article-body">
+        <div class="logo">
+          <img src="https://www.google.com/s2/favicons?domain=ad.nl&amp;sz=64" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo-fallback',textContent:'A'}))">
+        </div>
+        <div class="article-text">
+          <a class="article-title" href="https://www.ad.nl/gezond/gratis-gordelroosprik-mogelijk-voor-duizenden-extra-ouderen-kamer-wil-uitbreiding~a559bc33/" target="_blank" rel="noopener noreferrer">Gratis gordelroosprik mogelijk voor duizenden extra ouderen: Kamer wil uitbreiding</a>
+          <div class="meta">
+            <span class="badge">AD</span>
+            <span class="badge">nl_landelijk</span>
+            <span class="dot">·</span>
+            <span>4 uur geleden</span>
+          </div>
+          <p class="motivation">Het betreft landelijk gezondheidsbeleid dat direct van invloed is op de gezondheid en zorgkosten van ouderen in Almere.</p>
+        </div>
+      </div>
+    </li>
+  </ol>
+
+  <footer class="glass">
+    <p>Deze pagina filtert elke 12 uur automatisch wereldwijd nieuws op relevantie voor Almere. Een keyword-voorfilter selecteert artikelen die mogelijk relevant zijn; Gemini Flash-Lite scoort ze vervolgens op een schaal van 1&ndash;10 volgens een redactionele leidraad. De top 20 verschijnt hier.</p>
+    <p><a href="https://github.com/" rel="noopener noreferrer">Broncode op GitHub</a></p>
+  </footer>
+</main>
+</body>
+</html>

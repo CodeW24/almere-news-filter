@@ -1,0 +1,76 @@
+# Bronnenlijst voor Almere News Filter
+# Werkende feeds worden door verify_sources.py gevalideerd
+
+internationaal:
+  - name: BBC News
+    url: http://feeds.bbci.co.uk/news/rss.xml
+    tier: 1
+  - name: The Guardian (International)
+    url: https://www.theguardian.com/international/rss
+    tier: 1
+  - name: Al Jazeera English
+    url: https://www.aljazeera.com/xml/rss/all.xml
+    tier: 1
+  - name: CNN Edition  # native RSS bevroren sinds 2024; via Google News
+    url: https://news.google.com/rss/search?q=when:24h+site:cnn.com&hl=en-US&gl=US&ceid=US:en
+    tier: 1
+  - name: NYT HomePage
+    url: https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml
+    tier: 1
+  - name: AP News  # native RSS afgesloten; via Google News
+    url: https://news.google.com/rss/search?q=when:24h+site:apnews.com&hl=en-US&gl=US&ceid=US:en
+    tier: 1
+  - name: Reuters World  # native RSS afgesloten; via Google News
+    url: https://news.google.com/rss/search?q=when:24h+site:reuters.com&hl=en-US&gl=US&ceid=US:en
+    tier: 2
+
+nl_landelijk:
+  - name: NOS
+    url: https://feeds.nos.nl/nosnieuwsalgemeen
+    tier: 1
+  - name: NU.nl
+    url: https://www.nu.nl/rss/Algemeen
+    tier: 1
+  - name: RTL Nieuws
+    url: https://www.rtlnieuws.nl/rss.xml
+    tier: 1
+  - name: AD
+    url: https://www.ad.nl/home/rss.xml
+    tier: 1
+  - name: De Volkskrant
+    url: https://www.volkskrant.nl/voorpagina/rss.xml
+    tier: 1
+  - name: NRC
+    url: https://www.nrc.nl/rss/
+    tier: 1
+  - name: Het Financieele Dagblad  # paywall, native RSS dood; via Google News
+    url: https://news.google.com/rss/search?q=when:24h+site:fd.nl&hl=nl&gl=NL&ceid=NL:nl
+    tier: 1
+  - name: Trouw
+    url: https://www.trouw.nl/voorpagina/rss.xml
+    tier: 2
+  - name: Het Parool
+    url: https://www.parool.nl/voorpagina/rss.xml
+    tier: 2
+
+nl_regionaal:
+  - name: Omroep Flevoland   # belangrijkste lokale bron
+    url: https://www.omroepflevoland.nl/RSS
+    tier: 1
+  - name: NH Nieuws  # native RSS dood; via Google News
+    url: https://news.google.com/rss/search?q=when:24h+site:nhnieuws.nl&hl=nl&gl=NL&ceid=NL:nl
+    tier: 2
+  - name: AT5  # native RSS dood; via Google News
+    url: https://news.google.com/rss/search?q=when:24h+site:at5.nl&hl=nl&gl=NL&ceid=NL:nl
+    tier: 2
+  - name: RTV Utrecht
+    url: https://www.rtvutrecht.nl/rss/nieuws.xml
+    tier: 2
+
+journalisten_substack:
+  # Voeg hier publications toe die jij relevant vindt.
+  # Substack-feeds volgen het patroon: https://<naam>.substack.com/feed
+  # Voorbeeld (vul aan met namen die jij volgt):
+  # - name: Voorbeeldjournalist
+  #   url: https://voorbeeld.substack.com/feed
+  #   tier: 3
