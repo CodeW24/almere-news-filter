@@ -225,12 +225,24 @@ def main() -> int:
             applied += n
         return applied
 
+    quota_exhausted = False
     for batch_idx, batch in enumerate(batches, start=1):
+        if quota_exhausted:
+            skipped_articles += len(batch)
+            continue
         print(f"  batch {batch_idx}/{len(batches)} ({len(batch)} artikelen) ...", flush=True)
         try:
             result = score_batch(client, system_prompt, batch)
         except Exception as e:  # noqa: BLE001
             failed_batches += 1
+            if is_rate_limit(e):
+                # Quota op — individuele fallback helpt niet en eet timeout op.
+                # Sla resterende batches over; volgende run pakt ze op.
+                print(f"    [QUOTA] {type(e).__name__}: persistente rate-limit na retries.")
+                print(f"            Sla resterende batches over; worden volgende run opgepakt.")
+                skipped_articles += len(batch)
+                quota_exhausted = True
+                continue
             n = fallback_individual(batch, f"{type(e).__name__}: {str(e)[:80]}")
             rescued_via_fallback += n
             scored += n
