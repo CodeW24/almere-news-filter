@@ -201,7 +201,29 @@ def main() -> int:
 
     scored = 0
     failed_batches = 0
+    rescued_via_fallback = 0
     skipped_articles = 0
+
+    def fallback_individual(batch: list[dict], reason: str) -> int:
+        """Score elke article los; isoleert een rotte article die de batch verpest."""
+        print(f"    fallback: scoor {len(batch)} artikelen individueel ({reason}) ...")
+        nonlocal skipped_articles
+        applied = 0
+        for art in batch:
+            single = [art]
+            try:
+                single_result = score_batch(client, system_prompt, single)
+            except Exception as e:  # noqa: BLE001
+                skipped_articles += 1
+                print(f"      [SKIP id={art['id']}] {type(e).__name__}: {str(e)[:140]}")
+                continue
+            n, err = apply_batch_result(conn, single, single_result)
+            if err:
+                skipped_articles += 1
+                print(f"      [SKIP id={art['id']}] {err}")
+                continue
+            applied += n
+        return applied
 
     for batch_idx, batch in enumerate(batches, start=1):
         print(f"  batch {batch_idx}/{len(batches)} ({len(batch)} artikelen) ...", flush=True)
@@ -209,14 +231,16 @@ def main() -> int:
             result = score_batch(client, system_prompt, batch)
         except Exception as e:  # noqa: BLE001
             failed_batches += 1
-            skipped_articles += len(batch)
-            print(f"    [FAIL] {type(e).__name__}: {str(e)[:200]}")
+            n = fallback_individual(batch, f"{type(e).__name__}: {str(e)[:80]}")
+            rescued_via_fallback += n
+            scored += n
             continue
         n_applied, err = apply_batch_result(conn, batch, result)
         if err:
             failed_batches += 1
-            skipped_articles += len(batch)
-            print(f"    [SKIP] {err}")
+            n = fallback_individual(batch, err)
+            rescued_via_fallback += n
+            scored += n
             continue
         scored += n_applied
         avg = sum(s.score for s in result.scores) / len(result.scores)
@@ -227,7 +251,8 @@ def main() -> int:
     print("SCORING-SAMENVATTING")
     print("=" * 72)
     print(f"  Deze run gescoord  : {scored}")
-    print(f"  Mislukte batches   : {failed_batches}  ({skipped_articles} artikelen, blijven op status='new')")
+    print(f"  Via batch-fallback : {rescued_via_fallback}")
+    print(f"  Mislukte batches   : {failed_batches}  ({skipped_articles} artikelen overgeslagen, blijven op status='new')")
 
     distribution: Counter[int] = Counter()
     for (s,) in conn.execute("SELECT score FROM articles WHERE score IS NOT NULL"):
