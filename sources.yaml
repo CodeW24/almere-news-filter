@@ -23,6 +23,53 @@ internationaal:
   - name: Reuters World  # native RSS afgesloten; via Google News
     url: https://news.google.com/rss/search?q=when:24h+site:reuters.com&hl=en-US&gl=US&ceid=US:en
     tier: 2
+  - name: The Guardian (World)
+    url: https://www.theguardian.com/world/rss
+    tier: 1
+  - name: NYT World
+    url: https://rss.nytimes.com/services/xml/rss/nyt/World.xml
+    tier: 1
+  - name: Washington Post (World)
+    url: http://feeds.washingtonpost.com/rss/world
+    tier: 1
+  - name: CNBC (World)
+    url: https://www.cnbc.com/id/100727362/device/rss/rss.html
+    tier: 1
+  - name: Euronews
+    url: https://www.euronews.com/rss?level=theme&name=news
+    tier: 2
+  - name: The Independent (UK)
+    url: http://www.independent.co.uk/news/uk/rss
+    tier: 2
+  - name: Daily Mail
+    url: https://www.dailymail.co.uk/home/index.rss
+    tier: 2
+  - name: HuffPost World
+    url: https://www.huffpost.com/section/world-news/feed
+    tier: 2
+  - name: Yahoo News (Most Viewed)
+    url: https://news.yahoo.com/rss/mostviewed
+    tier: 2
+  - name: Daily Express
+    url: http://feeds.feedburner.com/daily-express-news-showbiz
+    tier: 3
+  - name: Reddit r/worldnews
+    url: https://www.reddit.com/r/worldnews/.rss
+    tier: 3
+  - name: Google News (root)
+    url: https://news.google.com/rss
+    tier: 3
+
+wetenschap:
+  - name: Nature
+    url: https://www.nature.com/nature.rss
+    tier: 2
+  - name: Phys.org
+    url: https://phys.org/rss-feed/
+    tier: 3
+  - name: ScienceDaily  # /top_news.xml was 404, /top.xml werkt
+    url: https://www.sciencedaily.com/rss/top.xml
+    tier: 3
 
 nl_landelijk:
   - name: NOS
