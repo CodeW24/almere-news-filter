@@ -258,7 +258,10 @@ def main() -> int:
         print(f"        -> {motiv[:120]}")
 
     conn.close()
-    return 0 if failed_batches == 0 else 2
+    # Returncode is altijd 0: gefaalde batches blijven score IS NULL en worden
+    # volgende run automatisch opnieuw opgepakt. Een transiente Gemini-storing
+    # moet de hele workflow niet rood maken.
+    return 0
 
 
 if __name__ == "__main__":

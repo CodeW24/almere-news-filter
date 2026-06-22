@@ -37,12 +37,17 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run pipeline
+        id: pipeline
+        continue-on-error: true
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PYTHONIOENCODING: utf-8
         run: python run.py
 
       - name: Commit & push results
+        # Ook bij gedeeltelijke fout: bewaar wat er wél lukte (nieuwe ingest,
+        # filter-state, partial scoring). Volgende run pakt de rest op.
+        if: success() || failure()
         id: commit
         run: |
           git config user.name  "github-actions[bot]"
@@ -59,7 +64,15 @@ jobs:
 
       - name: Trigger Pages deploy
         # Push-events vanuit GITHUB_TOKEN triggeren geen workflows — dispatch handmatig.
-        if: steps.commit.outputs.changed == 'true'
+        if: (success() || failure()) && steps.commit.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run pages.yml --ref main
+
+      - name: Fail job if pipeline failed
+        # Maak de workflow zichtbaar rood als de pipeline een stap miste, maar
+        # pas NA commit+push zodat we niets verliezen.
+        if: steps.pipeline.outcome == 'failure'
+        run: |
+          echo "Pipeline rapporteerde failures — zie 'Run pipeline'-step hierboven."
+          exit 1
