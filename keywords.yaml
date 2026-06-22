@@ -11,10 +11,78 @@ almere_direct:
   - Floriade
   - Oosterwold
   - Almere City
+  - Yanmar Stadion
+
+almere_wijken:
+  # Stadsdelen
+  - Almere Stad
+  - Almere Buiten
+  - Almere Haven
+  - Almere Poort
+  - Almere Hout
+  # Bekende wijken / buurten
+  - Muziekwijk
+  - Stedenwijk
+  - Filmwijk
+  - Literatuurwijk
+  - Waterwijk
+  - Kruidenwijk
+  - Parkwijk
+  - Verzetswijk
+  - Staatsliedenwijk
+  - Tussen de Vaarten
+  - Noorderplassen
+  - Eilandenbuurt
+  - Indische Buurt
+  - Bloemenbuurt
+  - Stripheldenbuurt
+  - Cascadepark
+  - Olympiakwartier
+  - Homeruskwartier
+  - Europakwartier
+  - Columbuskwartier
+  - Pampushout
+  - Sieradenbuurt
+  - Vogelhorst
+
+cultuur_almere:
+  - Kunstlinie
+  - KAF                # Kunstlinie Almere Flevoland
+  - Schouwburg Almere
+  - Corrosia           # cultureel centrum Almere Haven
+  - Apollo Hotel       # belangrijke eventlocatie
+  - Bibliotheek Almere
+  - Het Nieuwe Land    # museum
+  - Floriade Expo
+  - World Press Photo Almere
+  - Almeerse Architectuur
+
+instellingen_almere:
+  # Onderwijs
+  - Aeres Hogeschool
+  - Aeres MBO
+  - Windesheim Flevoland
+  - ROC Flevoland
+  - ROC van Flevoland
+  - Helen Parkhurst
+  - Echnaton
+  - Het Baken Almere
+  - Arte College
+  - Wellantcollege
+  # Zorg & welzijn
+  - Flevoziekenhuis
+  - Zorggroep Almere
+  - De Schoor          # welzijnsorganisatie
+  - Triade
+  - GGz Centraal
+  - Coloriet
+  - Kwintes
+  - Amsterdam UMC Almere
 
 regio:
   - Flevoland
   - Lelystad
+  - Zeewolde
   - Markermeer
   - IJmeer
   - IJsselmeer
@@ -28,6 +96,8 @@ infrastructuur:
   - IJmeerverbinding
 
 nationaal_politiek:
+  # Alleen instituties en begrippen; partijen en politici zijn bewust uit
+  # de lijst gehaald om niet op naam te filteren.
   - Tweede Kamer
   - Eerste Kamer
   - kabinet
@@ -36,13 +106,6 @@ nationaal_politiek:
   - regeerakkoord
   - hoofdlijnenakkoord
   - rijksbegroting
-  - VVD
-  - GroenLinks-PvdA
-  - PVV
-  - D66
-  - NSC
-  - BBB
-  - CDA
 
 beleid_en_themas:
   - woningmarkt
@@ -61,12 +124,20 @@ beleid_en_themas:
   - asielbeleid
   - integratie
   - jeugdzorg
+  - gezondheid
+  - documentaire
+  - tech
+  # Waterschappen
+  - waterschap
+  - Waterschap Zuiderzeeland   # bevoegd waterschap voor Flevoland
+  - dijkgraaf
+  - Rijkswaterstaat
+  - dijkverzwaring
 
 internationaal_met_NL_impact:
   - Europese Commissie
   - EU-besluit
   - NAVO
-  - Oekraïne
   - Gaza
   - klimaattop
 
@@ -77,17 +148,38 @@ engels_nl_relevant:
   - Netherlands
   - Dutch
   - Holland
-  - Amsterdam
   # NL-impact, vaak in EN-media
-  - Ukraine
   - NATO
   - European Commission
   - European Union
   - Brussels
   - climate summit
+  - climate change
+  - global warming
   - COP30
   - COP31
-  # Politieke namen die vaak in EN-koppen verschijnen
-  - Wilders
-  - Schoof
-  - Rutte
+  # Breed maar gevraagd
+  - Health
+  - documentary
+
+engels_beleid:
+  # EN-vertalingen van NL-beleidsthema's. "Dutch"-prefix om te voorkomen dat
+  # generieke termen (housing market, energy prices) overal matchen.
+  - Dutch parliament
+  - Dutch Senate
+  - Dutch cabinet
+  - Dutch government
+  - Dutch elections
+  - Dutch election
+  - Dutch coalition
+  - Prinsjesdag        # blijft onvertaald in EN-media
+  - Dutch nitrogen
+  - nitrogen crisis
+  - Dutch housing
+  - Dutch railways
+  - Dutch asylum
+  - Netherlands asylum
+  - Dutch farmer
+  - Dutch farmers
+  - Dutch water board
+  - Dutch water boards
