@@ -69,3 +69,25 @@ internationaal_met_NL_impact:
   - Oekraïne
   - Gaza
   - klimaattop
+
+engels_nl_relevant:
+  # Engelstalige equivalenten zodat BBC, Guardian, AP, Reuters, NYT, Al Jazeera
+  # en CNN-content ook door het filter komen.
+  # Geografisch / NL-signaal
+  - Netherlands
+  - Dutch
+  - Holland
+  - Amsterdam
+  # NL-impact, vaak in EN-media
+  - Ukraine
+  - NATO
+  - European Commission
+  - European Union
+  - Brussels
+  - climate summit
+  - COP30
+  - COP31
+  # Politieke namen die vaak in EN-koppen verschijnen
+  - Wilders
+  - Schoof
+  - Rutte

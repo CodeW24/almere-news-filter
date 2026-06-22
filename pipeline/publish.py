@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import sys
 from collections import Counter, defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -18,6 +18,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 TOP_N = 20
 MAX_PER_SOURCE = 5
+MAX_AGE_HOURS = 24
 
 SITE_DIR = PROJECT_ROOT / "site"
 TEMPLATE_DIR = PROJECT_ROOT / "pipeline" / "templates"
@@ -117,7 +118,8 @@ def format_updated_nl(now: datetime) -> str:
     )
 
 
-def select_articles(conn, top_n: int, max_per_source: int):
+def select_articles(conn, top_n: int, max_per_source: int, max_age_hours: int):
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=max_age_hours)).isoformat()
     rows = conn.execute(
         """
         SELECT id, url, title, published_at,
@@ -125,8 +127,10 @@ def select_articles(conn, top_n: int, max_per_source: int):
                score, score_motivation
           FROM articles
          WHERE score IS NOT NULL
+           AND published_at >= ?
          ORDER BY score DESC, published_at DESC
-        """
+        """,
+        (cutoff,),
     ).fetchall()
 
     selected = []
@@ -144,13 +148,16 @@ def select_articles(conn, top_n: int, max_per_source: int):
 
 def main() -> int:
     conn = open_db()
-    selected = select_articles(conn, TOP_N, MAX_PER_SOURCE)
+    selected = select_articles(conn, TOP_N, MAX_PER_SOURCE, MAX_AGE_HOURS)
     if not selected:
         print("Geen gescoorde artikelen — niets te publiceren.")
         conn.close()
         return 0
 
-    print(f"Geselecteerd: {len(selected)} artikelen (TOP_N={TOP_N}, MAX_PER_SOURCE={MAX_PER_SOURCE})")
+    print(
+        f"Geselecteerd: {len(selected)} artikelen "
+        f"(TOP_N={TOP_N}, MAX_PER_SOURCE={MAX_PER_SOURCE}, MAX_AGE={MAX_AGE_HOURS}h)"
+    )
 
     cur = conn.cursor()
     cur.executemany(
