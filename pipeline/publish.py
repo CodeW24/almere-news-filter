@@ -19,6 +19,10 @@ if hasattr(sys.stdout, "reconfigure"):
 TOP_N = 20
 MAX_PER_SOURCE = 5
 MAX_AGE_HOURS = 24
+# Verwijder aan het eind van elke run alles ouder dan dit — houdt de DB
+# onder GitHub's 100 MB per-file limiet. 14 dagen is ruim genoeg voor
+# dedup en voor het 24-uurs publish-venster.
+PRUNE_OLDER_THAN_DAYS = 14
 
 SITE_DIR = PROJECT_ROOT / "site"
 TEMPLATE_DIR = PROJECT_ROOT / "pipeline" / "templates"
@@ -146,6 +150,20 @@ def select_articles(conn, top_n: int, max_per_source: int, max_age_hours: int):
     return selected
 
 
+def prune_old_articles(conn, days: int) -> int:
+    """Verwijder artikelen ouder dan N dagen en VACUUM om ruimte terug te krijgen."""
+    cur = conn.execute(
+        "DELETE FROM articles WHERE published_at < datetime('now', ?)",
+        (f"-{days} days",),
+    )
+    deleted = cur.rowcount
+    conn.commit()
+    # VACUUM kan niet in een transactie; sqlite3 module heeft autocommit
+    # nodig via isolation_level=None. Simpelweg: eerst commit, dan execute.
+    conn.execute("VACUUM")
+    return deleted
+
+
 def main() -> int:
     conn = open_db()
     selected = select_articles(conn, TOP_N, MAX_PER_SOURCE, MAX_AGE_HOURS)
@@ -196,6 +214,12 @@ def main() -> int:
 
     OUTPUT_HTML.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_HTML.write_text(html, encoding="utf-8")
+
+    # Ruim DB op vóór de commit-stap in de workflow — anders groeit
+    # data/articles.db weer over GitHub's 100 MB per-file limiet.
+    pruned = prune_old_articles(conn, PRUNE_OLDER_THAN_DAYS)
+    print(f"DB-cleanup: {pruned} artikelen ouder dan {PRUNE_OLDER_THAN_DAYS} dagen verwijderd")
+
     conn.close()
 
     print(f"Geschreven: {OUTPUT_HTML.relative_to(PROJECT_ROOT)}")
