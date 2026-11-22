@@ -381,6 +381,9 @@
     </li>
     {%- endfor %}
   </ol>
+  {%- if not articles %}
+  <div class="glass article"><p class="motivation">Er zijn de afgelopen 24 uur nog geen nieuwe artikelen beoordeeld. De volgende update volgt bij de eerstvolgende run.</p></div>
+  {%- endif %}
 
   <footer class="glass">
     <p>Deze pagina filtert elke 12 uur automatisch wereldwijd nieuws op relevantie voor Almere. Een keyword-voorfilter selecteert artikelen die mogelijk relevant zijn; Gemini Flash-Lite scoort ze vervolgens op een schaal van 1&ndash;10 volgens een redactionele leidraad. De top 20 verschijnt hier.</p>

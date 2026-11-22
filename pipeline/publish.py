@@ -168,9 +168,9 @@ def main() -> int:
     conn = open_db()
     selected = select_articles(conn, TOP_N, MAX_PER_SOURCE, MAX_AGE_HOURS)
     if not selected:
-        print("Geen gescoorde artikelen — niets te publiceren.")
-        conn.close()
-        return 0
+        # Toch renderen: dan staat er een actuele datum en een melding op de
+        # site, in plaats van ongemerkt een verouderde pagina.
+        print("Geen verse gescoorde artikelen — pagina wordt met melding vernieuwd.")
 
     print(
         f"Geselecteerd: {len(selected)} artikelen "

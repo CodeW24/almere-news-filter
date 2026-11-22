@@ -208,7 +208,7 @@ def main() -> int:
     system_prompt = load_system_prompt()
     client = genai.Client(
         api_key=api_key,
-        http_options=types.HttpOptions(timeout=REQUEST_TIMEOUT_MS),
+        http_options=types.HttpOptions(api_version="v1beta", timeout=REQUEST_TIMEOUT_MS),
     )
     started = time.monotonic()
 
