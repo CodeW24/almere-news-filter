@@ -27,6 +27,20 @@ PROMPT_PATH = PROJECT_ROOT / "relevance_prompt.md"
 BATCH_SIZE = 10
 MAX_RETRIES = 3
 FALLBACK_BACKOFF_SECONDS = (5, 15, 45)
+# Een retryDelay langer dan dit betekent vrijwel altijd dat de daglimiet op is.
+# Niet slapen (dat liet eerder de hele job op de 30-min timeout lopen), maar
+# direct stoppen; de volgende run pakt de rest op.
+MAX_RETRY_SLEEP_SECONDS = 90
+# Harde timeout per Gemini-request, zodat een hangende verbinding niet de
+# hele run blokkeert.
+REQUEST_TIMEOUT_MS = 90_000
+# Totale tijd die de score-stap mag gebruiken. Daarna door naar publish met
+# wat er al gescoord is.
+SCORE_TIME_BUDGET_SECONDS = 12 * 60
+
+
+class QuotaExhausted(Exception):
+    """Gemini weigert langdurig (daglimiet of vergelijkbaar)."""
 
 
 class ScoredItem(BaseModel):
@@ -81,6 +95,8 @@ def extract_retry_delay(exc: Exception) -> float | None:
 
 
 def is_rate_limit(exc: Exception) -> bool:
+    if isinstance(exc, QuotaExhausted):
+        return True
     if isinstance(exc, genai_errors.APIError):
         code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
         if code == 429:
@@ -119,6 +135,10 @@ def score_batch(
                 delay = extract_retry_delay(e)
                 if delay is None:
                     delay = FALLBACK_BACKOFF_SECONDS[min(attempt, len(FALLBACK_BACKOFF_SECONDS) - 1)]
+                elif delay > MAX_RETRY_SLEEP_SECONDS:
+                    raise QuotaExhausted(
+                        f"Gemini vraagt {delay:.0f}s te wachten — daglimiet waarschijnlijk op"
+                    ) from e
                 # add 0.5s padding to be safe
                 delay += 0.5
                 print(f"    rate limited; sleeping {delay:.1f}s ...")
@@ -186,7 +206,11 @@ def main() -> int:
         return 1
 
     system_prompt = load_system_prompt()
-    client = genai.Client(api_key=api_key)
+    client = genai.Client(
+        api_key=api_key,
+        http_options=types.HttpOptions(timeout=REQUEST_TIMEOUT_MS),
+    )
+    started = time.monotonic()
 
     conn = open_db()
     queue = fetch_to_score(conn)
@@ -210,6 +234,9 @@ def main() -> int:
         nonlocal skipped_articles
         applied = 0
         for art in batch:
+            if time.monotonic() - started > SCORE_TIME_BUDGET_SECONDS:
+                skipped_articles += 1
+                continue
             single = [art]
             try:
                 single_result = score_batch(client, system_prompt, single)
@@ -228,6 +255,12 @@ def main() -> int:
     quota_exhausted = False
     for batch_idx, batch in enumerate(batches, start=1):
         if quota_exhausted:
+            skipped_articles += len(batch)
+            continue
+        if time.monotonic() - started > SCORE_TIME_BUDGET_SECONDS:
+            print(f"  [BUDGET] Tijdbudget van {SCORE_TIME_BUDGET_SECONDS // 60} min op; "
+                  f"resterende artikelen worden volgende run gescoord.")
+            quota_exhausted = True
             skipped_articles += len(batch)
             continue
         print(f"  batch {batch_idx}/{len(batches)} ({len(batch)} artikelen) ...", flush=True)

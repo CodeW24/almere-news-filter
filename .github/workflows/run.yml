@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
   actions: write   # nodig om de pages-workflow te dispatchen na een commit
+  issues: write    # alarm-issue bij een mislukte run
 
 concurrency:
   group: run-pipeline
@@ -39,9 +40,13 @@ jobs:
       - name: Run pipeline
         id: pipeline
         continue-on-error: true
+        # Stap-timeout ruim onder de job-timeout: als de pipeline vastloopt,
+        # telt dat als 'failure' en draaien commit + deploy alsnog.
+        timeout-minutes: 20
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PYTHONIOENCODING: utf-8
+          PYTHONUNBUFFERED: "1"
         run: python run.py
 
       - name: Commit & push results
@@ -68,6 +73,24 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run pages.yml --ref main
+
+      - name: Open alarm-issue bij mislukte run
+        # Een open issue levert een e-mail op. Bestaat er al een open
+        # alarm-issue, dan komt er een comment bij in plaats van een nieuw issue.
+        if: always() && (steps.pipeline.outcome == 'failure' || steps.commit.outcome == 'failure')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          BODY="De pipeline-run van $(date -u +'%Y-%m-%d %H:%M UTC') is mislukt: $URL"
+          NR=$(gh issue list --state open --search "Pipeline-run mislukt in:title" --json number -q '.[0].number')
+          if [ -n "$NR" ]; then
+            gh issue comment "$NR" --body "$BODY"
+          else
+            gh issue create --title "Pipeline-run mislukt" --body "$BODY
+
+          Sluit dit issue zodra het probleem is opgelost; bij een volgende fout wordt een nieuw issue geopend."
+          fi
 
       - name: Fail job if pipeline failed
         # Maak de workflow zichtbaar rood als de pipeline een stap miste, maar
